@@ -37,7 +37,7 @@ The application is built using latest **Vue.js 3** for the frontend and **FastAP
     ```bash
     git clone <https://github.com/rahulsharmaYS/skillzy>                  # will update once grades are out
     ```
-
+2. Else, download the zip file and extract the app and start following from Step 2.
 
 ### Step 2: Install Backend Dependencies
 1. Navigate to the backend directory and install the necessary Python packages:
