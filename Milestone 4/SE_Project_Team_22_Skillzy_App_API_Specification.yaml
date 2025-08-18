@@ -1,0 +1,4108 @@
+openapi: 3.0.3
+info:
+  title: Skillzy App API
+  version: 1.0.0
+  description: |
+    # User Stories
+
+    ## Student
+    ### As a student, I want to set reminders for my homework and chores, so that I can manage my time better.
+    ### As a student, I want to track my daily and weekly goals, so that I can see my progress and stay motivated.
+    - GET `/api/v1/student/{user_id}/calendar`
+    - POST `/api/v1/student/{user_id}/calendar`
+    - PUT `/api/v1/student/{user_id}/calendar/{task_id}`
+    - DELETE `/api/v1/student/{user_id}/calendar/{task_id}`
+    
+    ### As a student, I want to use a timer for study sessions, so that I can focus and take regular breaks.
+    - POST `/api/v1/student/{user_id}/focus_mode/start`
+    - PUT `/api/v1/student/{user_id}/focus_mode/{focus_id}/end`
+    
+    ### As a student, I want to practice conversation scenarios with a virtual coach, so that I can improve my speaking and listening skills.
+    ### As a student, I want to get feedback on my communication exercises, so that I can learn from my mistakes.
+    - POST `/api/v1/student/{user_id}/bot`
+    
+    ## Teacher
+    ### As a teacher, I want to assign tasks or projects to my students through the app, so that I can help them learn to plan ahead.
+    ### As a teacher, I want to assign group communication exercises, so students can practice teamwork and empathy.
+    ### As a teacher, I want to review student’s performance in communication activities, so I can provide targeted feedback.
+    - POST `/api/v1/teacher/{teacher_id}/assignments`
+    - POST `/api/v1/teacher/{teacher_id}/assignments`
+    - PUT `/api/v1/teacher/{teacher_id}/assignments/{assignment_id}`
+    - POST `/api/v1/teacher/{teacher_id}/assignments/{assignment_id}/questions`
+    - PUT `/api/v1/teacher/{teacher_id}/assignments/{assignment_id}/questions/{question_id}`
+    - DELETE `/api/v1/teacher/{teacher_id}/assignments/{assignment_id}/questions/{question_id}`
+    - GET `/api/v1/teacher/{teacher_id}/assignments/{assignment_id}/submissions`
+    - POST `/api/v1/teacher/{teacher_id}/assignments/{assignment_id}/evaluation`
+
+    ## Parent
+    ### As a parent, I want to view my childʼs task completion and time management progress, so that I can encourage good habits at home.
+    - GET `/api/v1/parent/child_stats/{parent_id}`
+    - GET `/api/v1/parent/tasks/{parent_id}`
+    - GET `/api/v1/parent/assignments/{parent_id}`
+    - GET `/api/v1/parent/achievements/{parent_id}`
+    
+    ### As a parent, I want to receive notifications if my child misses important deadlines, so that I can offer timely support.
+    - GET `/api/v1/parent/notifications/{parent_id}`
+    
+    ### Note: Admin user (Tertiary User) can mange application and other users 
+    - GET `/api/v1/admin/dashboard`
+    - GET `/api/v1/admin/user/search`
+    - POST `/api/v1/admin/announcement`
+    - GET `/api/v1/admin/announcements`
+    - PUT `/api/v1/admin/user/{user_id}/block`
+    - PUT `/api/v1/admin/user/{user_id}/unblock`
+    - DELETE `/api/v1/admin/user/{user_id}`
+    
+
+paths:
+  /:
+    post:
+      tags:
+      - Home
+      summary: Home
+      operationId: home_page
+      responses:
+        '200':
+          description: Home page
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    
+  /api/v1/user/login:
+    post:
+      tags:
+      - User
+      summary: Login
+      operationId: login_api_v1_user_login_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_login_api_v1_user_login_post'
+        required: true
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  token_type:
+                    type: string
+                    example: bearer
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      role:
+                        type: string
+                        example: teacher
+                      username:
+                        type: string
+                        example: johndoe
+        '401':
+          description: Unauthorized (invalid credentials)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Incorrect username or password
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Internal server error"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/user/create_user:
+    post:
+      tags:
+      - User
+      summary: Register User
+      operationId: register_user_api_v1_user_create_user_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: johndoe
+                password:
+                  type: string
+                  example: password123
+                email:
+                  type: string
+                  format: email
+                  example: johndoe@example.com
+                full_name:
+                  type: string
+                  example: John Doe
+                role_name:
+                  type: string
+                  enum: [student, teacher, parent]
+                  example: student
+                profile_pic:
+                  type: string
+                  example: "profile_pic.jpg"
+                class_id:
+                  type: integer
+                  example: 3
+                subject_id:
+                  type: integer
+                  example: 5
+                child_email:
+                  type: string
+                  format: email
+                  example: child@example.com
+              required:
+                - username
+                - password
+                - role_name
+      responses:
+        '200':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User created successfully
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 10
+                      email:
+                        type: string
+                        example: johndoe@example.com
+                      full_name:
+                        type: string
+                        example: John Doe
+                      username:
+                        type: string
+                        example: johndoe
+                      role_name:
+                        type: string
+                        example: student
+                      created_at:
+                        type: string
+                        format: date-time
+                        example: "2025-07-20T10:00:00"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Username already exists
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Internal server error"
+                    
+  /api/v1/user/{user_id}/report:
+    post:
+      tags:
+      - User
+      summary: Report User
+      operationId: report_user_api_v1_user_create_user_post
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                  example: technical issue for teacher
+                issue_type:
+                  type: string
+                  example: technical issue
+                username:
+                  type: string
+                  example: johndoe
+                message:
+                  type: string
+                  format: email
+                  example: johndoe@example.com
+              required:
+                - description
+                - issue_type
+      responses:
+        '202':
+          description: Issue reported successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Issue reported successfully
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Username already exists
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Internal server error"
+                    
+  /api/v1/student/{user_id}/dashboard:
+    get:
+      tags:
+      - Student
+      summary: Student Dashboard
+      operationId: student_dashboard_api_v1_student__user_id__dashboard_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentDashboardSchema'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/student/{user_id}/calendar:
+    get:
+      tags:
+      - Student
+      summary: Get Student Calendar
+      operationId: get_student_calendar_api_v1_student__user_id__calendar_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskSchema'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+        - Student
+      summary: Create Calendar Task
+      operationId: create_calendar_task_api_v1_student__user_id__calendar_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: User ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                due_date:
+                  type: string
+                  format: date-time
+                  example: "2025-07-20T18:00:00"
+                status:
+                  type: string
+                  enum: [pending, completed, overdue]
+      responses:
+        '200':
+          description: Task Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                  description:
+                    type: string
+                  due_date:
+                    type: string
+                    format: date-time
+                  status:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+                  student_id:
+                    type: integer
+        '404':
+          description: Student Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/student/{user_id}/calendar/{task_id}:
+    put:
+      tags:
+        - Student
+      summary: Update Calendar Task
+      operationId: update_calendar_task_api_v1_student__user_id__calendar__task_id__put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: User ID
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Task ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                status:
+                  type: string
+                  enum: [pending, completed, overdue]
+                due_date:
+                  type: string
+                  format: date-time
+                  example: "2025-07-20T15:00:00"
+      responses:
+        '200':
+          description: Task Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                  description:
+                    type: string
+                  status:
+                    type: string
+                  due_date:
+                    type: string
+                    format: date-time
+                  student_id:
+                    type: integer
+                  created_at:
+                    type: string
+                    format: date-time
+        '404':
+          description: Task or Student Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+        - Student
+      summary: Delete Calendar Task
+      operationId: delete_calendar_task_api_v1_student__user_id__calendar__task_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: User ID
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Task ID
+      responses:
+        '200':
+          description: Task Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Task deleted
+        '404':
+          description: Student or Task Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/student/{user_id}/calendar/{task_id}/complete:
+    put:
+      tags:
+      - Student
+      summary: Mark Calendar Task Complete
+      operationId: mark_calendar_task_complete_api_v1_student__user_id__calendar__task_id__complete_put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Task Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/TaskSchema'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/student/user/{user_id}/assignments:
+    get:
+      tags:
+      - Student
+      summary: Get Assignments
+      operationId: get_assignments_api_v1_student_user__user_id__assignments_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      - name: assignment_id
+        in: query
+        required: true
+        schema:
+          type: integer
+          title: Assignment Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/AssignmentSchemaOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/student/{user_id}/assignments/{assignment_id}/submit:
+    post:
+      tags:
+      - Student
+      summary: Submit Assignment
+      operationId: submit_assignment_api_v1_student__user_id__assignments__assignment_id__submit_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: User ID
+        - name: assignment_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Assignment ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                additionalProperties: true  # Flexible structure for answer dicts
+              example:
+                - question_id: 1
+                  answer: "Option A"
+                - question_id: 2
+                  answer: "Option C"
+      responses:
+        '200':
+          description: Assignment Submitted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Assignment submitted
+                  submitted_answers:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+        '404':
+          description: Student or Assignment Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/student/{user_id}/badges:
+    get:
+      tags:
+      - Student
+      summary: Get Badges
+      operationId: get_badges_api_v1_student__user_id__badges_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/student/{user_id}/resources:
+    get:
+      tags:
+      - Student
+      summary: Get Knowledge Base
+      operationId: get_knowledge_base_api_v1_student__user_id__resources_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResourceOut'
+                title: Response Get Knowledge Base Api V1 Student  User Id  Resources
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/student/{user_id}/messages:
+    get:
+      tags:
+        - Student
+      summary: Get Student Messages
+      operationId: get_student_messages_api_v1_student__user_id__messages_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: User ID
+      responses:
+        '200':
+          description: List of Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    from:
+                      type: string
+                      example: Teacher John
+                    message:
+                      type: string
+                      example: Submit your assignment by tomorrow
+                    timestamp:
+                      type: string
+                      format: date-time
+                      example: "2025-07-20T12:34:56Z"
+        '404':
+          description: Student Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Student not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/student/{user_id}/profile:
+    get:
+      tags:
+        - Student
+      summary: Get Student Profile
+      operationId: get_student_profile_api_v1_student__user_id__profile_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: User ID
+      responses:
+        '200':
+          description: Student Profile Retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  full_name:
+                    type: string
+                    example: John Doe
+                  email:
+                    type: string
+                    format: email
+                    example: johndoe@example.com
+                  username:
+                    type: string
+                    example: johndoechavan09
+                  profile_picture:
+                    type: string
+                    example: "avatar.png"
+                  class:
+                    type: object
+                    properties:
+                      standard:
+                        type: string
+                        example: "10"
+                      division:
+                        type: string
+                        example: "B"
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: "2025-07-20T12:00:00Z"
+        '404':
+          description: Student Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Student not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    put:
+      tags:
+      - Student
+      summary: Update Student Profile
+      operationId: update_student_profile_api_v1_student__user_id__profile_put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdateRequest'
+      responses:
+        '200':
+          description: Profile Updated Successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Profile updated successfully
+                  full_name:
+                    type: string
+                    example: John Doe
+                  email:
+                    type: string
+                    format: email
+                    example: john.doe@example.com
+                  avatar:
+                    type: string
+                    format: uri
+                    example: https://example.com/avatar.png
+        '404':
+          description: Student Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Student not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/student/{user_id}/notifications:
+    get:
+      tags:
+        - Student
+      summary: Get Notifications
+      operationId: get_notifications_api_v1_student__user_id__notifications_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: User ID
+      responses:
+        '200':
+          description: List of Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NotificationSchema'
+        '404':
+          description: Student not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Student not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/student/{user_id}/focus_mode/start:
+    post:
+      tags:
+        - Student
+      summary: Focus mode start
+      operationId: focus_mode_start_api_v1_student__user_id__focus_mode_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: User ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                start_time:
+                  type: string
+                  format: date
+                  example: "2020/01/01 12:30"
+      responses:
+        '202':
+          description: Focus mode started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Focus mode started
+        '404':
+          description: Student not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Student not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/student/{user_id}/focus_mode/{focus_id}/end:
+    put:
+      tags:
+        - Student
+      summary: Focus mode end
+      operationId: focus_mode_end_api_v1_student__user_id__focus_mode_put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: User ID
+        - name: focus_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Focus Mode ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                end_time:
+                  type: string
+                  format: date
+                  example: "2020/01/01 12:30"
+                tab_switch_count:
+                  type: integer
+                  example: 1
+      responses:
+        '200':
+          description: Focus mode ended
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Focus mode ended
+        '404':
+          description: Student not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Student not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/student/{user_id}/bot:
+    post:
+      tags:
+        - AI Chatbot
+      summary: Interact with AI Chatbot (Text/Voice)
+      operationId: interact_with_bot_api_v1_student_user_id_bot_post
+      security:
+        - OAuth2PasswordBearer: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            title: Student User ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                input_type:
+                  type: string
+                  enum: [text, voice]
+                  description: Type of input (text or voice)
+                message:
+                  type: string
+                  description: Text message (if input_type is text)
+                audio_file:
+                  type: string
+                  format: binary
+                  description: Audio file (if input_type is voice)
+      responses:
+        '200':
+          description: Chatbot response with voice and text
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  text_response:
+                    type: string
+                    description: Text response from the chatbot
+                  audio_response_url:
+                    type: string
+                    format: uri
+                    description: URL to play the voice response
+                  history:
+                    type: array
+                    description: Full chat history of user
+                    items:
+                      type: object
+                      properties:
+                        sender:
+                          type: string
+                          enum: [user, bot]
+                        message:
+                          type: string
+                        timestamp:
+                          type: string
+                          format: date-time
+        '400':
+          description: Bad Request (e.g., missing input)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/teacher/{teacher_id}:
+    get:
+      tags:
+      - Teachers
+      summary: Get Teacher
+      operationId: get_teacher_api_v1_teacher__teacher_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: teacher_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Teacher Id
+      responses:
+        '200':
+          description: Teacher found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  teacher:
+                    $ref: '#/components/schemas/TeacherSchema'
+        '400':
+          description: Teacher ID is required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Teacher ID is required
+        '404':
+          description: Teacher not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Teacher not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal Server Error
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/teacher/{teacher_id}/dashboard:
+    get:
+      tags:
+      - Teachers
+      summary: Get Teacher Dashboard
+      operationId: get_teacher_dashboard_api_v1_teacher__teacher_id__dashboard_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: teacher_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Teacher Id
+      responses:
+        '200':
+          description: Teacher dashboard data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  teacher_name:
+                    type: string
+                    example: John Doe
+                  summary:
+                    type: object
+                    properties:
+                      total_students:
+                        type: integer
+                        example: 30
+                      active_students:
+                        type: integer
+                        example: 25
+                      courses_taught:
+                        type: integer
+                        example: 3
+                      overall_completion:
+                        type: number
+                        example: 76
+                      course_completion_percentage:
+                        type: number
+                        example: 85
+                  assignment_performance:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        title:
+                          type: string
+                          example: "Algebra Test 1"
+                        average_score:
+                          type: number
+                          example: 78.5
+                  student_engagement:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        student_id:
+                          type: integer
+                          example: 101
+                        full_name:
+                          type: string
+                          example: "Jane Smith"
+                        completed_tasks:
+                          type: integer
+                          example: 8
+        '404':
+          description: Teacher not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Teacher not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal Server Error
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/teacher/{teacher_id}/profile:
+    get:
+      tags:
+      - Teachers
+      summary: Get Teacher Profile
+      operationId: get_teacher_profile_api_v1_teacher__teacher_id__profile_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: teacher_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Teacher Id
+      responses:
+        '200':
+          description: Teacher profile data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    example: "John Doe"
+                  email:
+                    type: string
+                    format: email
+                    example: "john.doe@example.com"
+                  profile_picture:
+                    type: string
+                    example: "avatar.png"
+                  subjects:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Mathematics"]
+                  role:
+                    type: string
+                    example: "teacher"
+        '404':
+          description: Teacher not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Teacher not found"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Internal Server Error"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/teacher/{teacher_id}/editprofile:
+    put:
+      tags:
+      - Teachers
+      summary: Edit Teacher Profile
+      operationId: edit_teacher_profile_api_v1_teacher__teacher_id__editprofile_put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: teacher_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Teacher Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditProfileRequest'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Profile updated successfully
+        '404':
+          description: Teacher not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Teacher not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal Server Error"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/teacher/{teacher_id}/resources:
+    post:
+      tags:
+      - Teachers
+      summary: Create Resource For Teacher
+      operationId: create_resource_for_teacher_api_v1_teacher__teacher_id__resources_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: teacher_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Teacher Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceCreate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceResponse'
+        '404':
+          description: Teacher not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Teacher not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal Server Error"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - Teachers
+      summary: Get Resources For Teacher
+      operationId: get_resources_for_teacher_api_v1_teacher__teacher_id__resources_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: teacher_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Teacher Id
+      - name: category
+        in: query
+        required: true
+        schema:
+          enum:
+          - student
+          - instructor
+          type: string
+          title: Category
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResourceOut'
+                title: Response Get Resources For Teacher Api V1 Teacher  Teacher
+                  Id  Resources Get
+        '404':
+          description: Teacher not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Teacher not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal Server Error
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/teacher/{teacher_id}/students:
+    get:
+      tags:
+      - Teachers
+      summary: Get Students For Teacher
+      operationId: get_students_for_teacher_api_v1_teacher__teacher_id__students_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: teacher_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Teacher Id
+      responses:
+        '200':
+          description: List of students
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      example: "#23"
+                    name:
+                      type: string
+                      example: "John Doe"
+                    status:
+                      type: string
+                      example: "Active"
+        '404':
+          description: Teacher not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Teacher not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal Server Error"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/teacher/student/{student_id}:
+    get:
+      tags:
+      - Teachers
+      summary: Get Student Details
+      operationId: get_student_details_api_v1_teacher_student__student_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: student_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Student Id
+      responses:
+        '200':
+          description: Student details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 42
+                  name:
+                    type: string
+                    example: John Doe
+                  email:
+                    type: string
+                    example: johndoe@example.com
+                  status:
+                    type: string
+                    example: Active
+                  class:
+                    type: string
+                    example: "10-B"
+        '404':
+          description: Student not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Student not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal Server Error"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/teacher/{teacher_id}/assignments:
+    post:
+      tags:
+      - Teachers
+      summary: Create Assignment
+      operationId: create_assignment_api_v1_teacher__teacher_id__assignments_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: teacher_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Teacher Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentCreate'
+      responses:
+        '200':
+          description: Assignments created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 5 assignments created.
+                  students:
+                    type: array
+                    items:
+                      type: string
+                    example: ["John Doe", "Sam Watson"]
+        '400':
+          description: Missing class or subject for the teacher
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Teacher must be assigned to both class and subject
+        '404':
+          description: Teacher not found or no matching students
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: No matching students found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Something went wrong"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - Teachers
+      summary: Get Assignments
+      operationId: get_assignments_api_v1_teacher__teacher_id__assignments_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: teacher_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Teacher Id
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+          title: Type
+      - name: search
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+          title: Search
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/AssignmentSchemaOut'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Unexpected error while fetching assignments
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/teacher/{teacher_id}/assignments/{assignment_id}:
+    put:
+      tags:
+      - Teachers
+      summary: Update Assignment
+      operationId: update_assignment_api_v1_teacher__teacher_id__assignments__assignment_id__put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: teacher_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Teacher Id
+      - name: assignment_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Assignment Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentCreate'
+      responses:
+        '200':
+          description: Assignment updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Assignment updated"
+                  assignment:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 42
+                      title:
+                        type: string
+                      feedback:
+                        type: string
+                      assignment_deadline:
+                        type: string
+                        format: date-time
+                      score:
+                        type: integer
+                      question_type:
+                        type: string
+        '404':
+          description: Assignment not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Assignment not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Something went wrong: DB error"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/teacher/{teacher_id}/assignments/{assignment_id}/questions:
+    post:
+      tags:
+      - Teachers
+      summary: Add Question
+      operationId: add_question_api_v1_teacher__teacher_id__assignments__assignment_id__questions_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: teacher_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Teacher Id
+      - name: assignment_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Assignment Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionCreate'
+      responses:
+        '200':
+          description: Question successfully added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Question added"
+                  question:
+                    $ref: '#/components/schemas/QuestionSchema'
+        '404':
+          description: Assignment not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Assignment not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Internal Server Error"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/teacher/{teacher_id}/assignments/{assignment_id}/questions/{question_id}:
+    put:
+      tags:
+      - Teachers
+      summary: Update Question
+      operationId: update_question_api_v1_teacher__teacher_id__assignments__assignment_id__questions__question_id__put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: teacher_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Teacher Id
+      - name: assignment_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Assignment Id
+      - name: question_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Question Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionCreate'
+      responses:
+        '200':
+          description: Question updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Question updated"
+                  question:
+                    $ref: '#/components/schemas/QuestionSchema'
+        '404':
+          description: Question not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Question not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Internal Server Error"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Teachers
+      summary: Delete Question
+      operationId: delete_question_api_v1_teacher__teacher_id__assignments__assignment_id__questions__question_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: teacher_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Teacher Id
+      - name: assignment_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Assignment Id
+      - name: question_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Question Id
+      responses:
+        '200':
+          description: Question deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Question deleted"
+        '404':
+          description: Question not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Question not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Internal Server Error"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/teacher/{teacher_id}/assignments/{assignment_id}/submissions:
+    get:
+      tags:
+      - Teachers
+      summary: Get submission
+      operationId: get_submissions_api_v1_teacher__teacher_id__assignments__assignment_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: teacher_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Teacher Id
+      - name: assignment_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Assignment Id
+      responses:
+        '200':
+          description: Question updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  student_id:
+                    type: integer
+                    example: 1
+                  student_response:
+                    type: string
+                    example: "answer1"
+                  question_id:
+                    type: integer
+                    example: 1
+                  assignmet_id:
+                    type: integer
+                    example: 1
+        '404':
+          description: Question not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Question not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Internal Server Error"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/teacher/{teacher_id}/assignments/{assignment_id}/evaluation:
+    post:
+      tags:
+      - Teachers
+      summary: Update Question
+      operationId: post_evaluation_api_v1_teacher__teacher_id__assignments__assignment_id__post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: teacher_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Teacher Id
+      - name: assignment_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Assignment Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                student_id:
+                  type: integer
+                  example: 1
+                score:
+                  type: integer
+                  example: 10
+      responses:
+        '202':
+          description: Evaluation posted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Evaluation posted successfully
+        '404':
+          description: Question not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Question not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Internal Server Error"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/parent/{parent_id}/profile:
+    get:
+      tags:
+      - Parents
+      summary: Get Parent Profile
+      operationId: get_parent_profile_api_v1_parent__parent_id__profile_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: parent_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Parent Id
+      responses:
+        '200':
+          description: Parent profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParentSchema'
+        '400':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Parent ID is required
+        '404':
+          description: Teacher not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Teacher not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal Server Error"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    put:
+      tags:
+      - Parents
+      summary: Edit Parent Profile
+      operationId: edit_parent_profile_api_v1_parent__parent_id__profile_put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: parent_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Parent Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditProfileRequest'
+      responses:
+        '202':
+          description: Parent profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Parent profile updated successfully
+        '400':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Parent ID is required
+        '404':
+          description: Parent not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Parent not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal Server Error"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/parent/child_stats/{parent_id}:
+    get:
+      tags:
+      - Parents
+      summary: Get Child Stats
+      operationId: get_child_stats_api_v1_parent_child_stats__parent_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: parent_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Parent Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChildStatsSchema'
+        '400':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Parent ID is required
+        '404':
+          description: Teacher not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Teacher not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal Server Error"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/parent/{parent_id}/child/profile:
+    get:
+      tags:
+      - Parents
+      summary: Get Parent Children
+      operationId: get_parent_children_api_v1_parent__parent_id__child_profile_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: parent_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Parent Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentSchema'
+        '400':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Parent ID is required
+        '404':
+          description: Teacher not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Teacher not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal Server Error"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/parent/tasks/{parent_id}:
+    get:
+      tags:
+      - Parents
+      summary: Get Tasks For Student
+      operationId: get_tasks_for_student_api_v1_parent_tasks__parent_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: parent_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Parent Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskSchema'
+                title: Response Get Tasks For Student Api V1 Parent Tasks  Parent
+                  Id  Get
+        '404':
+          description: Teacher not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Teacher not found
+        '400':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Parent ID is required
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal Server Error"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/parent/assignments/{parent_id}:
+    get:
+      tags:
+      - Parents
+      summary: Get Assignments For Student
+      operationId: get_assignments_for_student_api_v1_parent_assignments__parent_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: parent_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Parent Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AssignmentSchemaOut'
+                title: Response Get Assignments For Student Api V1 Parent Assignments  Parent
+                  Id  Get
+        '400':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Parent ID is required
+        '404':
+          description: Teacher not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Teacher not found
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal Server Error"
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/parent/achievements/{parent_id}:
+    get:
+      tags:
+      - Parents
+      summary: Get Achievements For Student
+      operationId: get_achievements_for_student_api_v1_parent_achievements__parent_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+        - in: path
+          name: parent_id
+          required: true
+          schema:
+            type: integer
+          description: The ID of the parent
+      responses:
+        '200':
+          description: List of achievement badges for the student
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1
+                    name:
+                      type: string
+                      example: "Star Performer"
+                    description:
+                      type: string
+                      example: "Awarded for excellent performance"
+                    icon_url:
+                      type: string
+                      example: "https://example.com/icons/star.png"
+        '404':
+          description: Parent or student's badges not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: No tasks found for the given student ID
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal server error
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/parent/notifications/{parent_id}:
+    get:
+      tags:
+      - Parents
+      summary: Get Notifications For Parent
+      operationId: get_notifications_for_parent_api_v1_parent_notifications__parent_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+        - in: path
+          name: parent_id
+          required: true
+          schema:
+            type: integer
+          description: The ID of the parent
+      responses:
+        '200':
+          description: List of notifications for the parent
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1
+                    user_id:
+                      type: integer
+                      example: 5
+                    message:
+                      type: string
+                      example: "You have a new message from your teacher."
+                    timestamp:
+                      type: string
+                      format: date-time
+                      example: "2025-07-20T14:28:32Z"
+        '404':
+          description: Parent not found or no notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: No notifications found for the given parent ID
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal server error
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/chat/conversations:
+    get:
+      tags:
+      - Chat
+      summary: Get Teacher Conversations
+      operationId: get_teacher_conversations_api_v1_chat_conversations_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+        - name: teacher_id
+          in: query
+          required: true
+          schema:
+            type: integer
+          example: 12
+      responses:
+        '200':
+          description: List of conversations for a teacher
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 101
+                        participants:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                                example: 5
+                              name:
+                                type: string
+                                example: Parent Full Name
+        '404':
+          description: Teacher not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Teacher not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/chat/parent/{parent_id}/contact:
+    get:
+      tags:
+      - Chat
+      summary: Get Parent Contact
+      operationId: get_parent_contact_api_v1_chat_parent__parent_id__contact_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+        - name: parent_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 7
+      responses:
+        '200':
+          description: Teacher contact information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: integer
+                    example: 12
+                  role_name:
+                    type: string
+                    example: teacher
+                  full_name:
+                    type: string
+                    example: Jane Doe
+                  email:
+                    type: string
+                    format: email
+                    example: janedoe@example.com
+                  student_name:
+                    type: string
+                    example: John Doe
+        '404':
+          description: Parent, Student, or Teacher not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Parent not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/chat/teacher/{teacher_id}/contacts:
+    get:
+      tags:
+      - Chat
+      summary: Get Teacher Contacts
+      operationId: get_teacher_contacts_api_v1_chat_teacher__teacher_id__contacts_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+        - name: teacher_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 5
+      responses:
+        '200':
+          description: List of parent contacts for the teacher
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contacts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        user_id:
+                          type: integer
+                          example: 23
+                        role_name:
+                          type: string
+                          example: parent
+                        full_name:
+                          type: string
+                          example: Meena Kumari
+                        email:
+                          type: string
+                          format: email
+                          example: meena.k@example.com
+        '404':
+          description: Teacher not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Teacher not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/admin/dashboard:
+    get:
+      tags:
+      - Admin
+      summary: Get Dashboard Data
+      operationId: get_dashboard_data_api_v1_admin_dashboard_get
+      security:
+      - OAuth2PasswordBearer: []
+      responses:
+        '200':
+          description: Dashboard data containing all users, students, teachers, and parents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        username:
+                          type: string
+                          example: admin123
+                        full_name:
+                          type: string
+                          example: Admin User
+                        email:
+                          type: string
+                          format: email
+                          example: admin@example.com
+                        role_name:
+                          type: string
+                          example: admin
+                  students:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 10
+                        user_id:
+                          type: integer
+                          example: 5
+                        class_id:
+                          type: integer
+                          example: 2
+                        subject_id:
+                          type: integer
+                          example: 4
+                  teachers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 3
+                        user_id:
+                          type: integer
+                          example: 7
+                        class_id:
+                          type: integer
+                          example: 1
+                        subject_id:
+                          type: integer
+                          example: 2
+                  parents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 6
+                        user_id:
+                          type: integer
+                          example: 8
+                        student_id:
+                          type: integer
+                          example: 10
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal server error
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/admin/user/search:
+    get:
+      tags:
+      - Admin
+      summary: Search User
+      operationId: search_user_api_v1_admin_user_search_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+            format: email
+          description: Email of the user to search
+        - name: user_id
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: ID of the user to search
+      responses:
+        '200':
+          description: User found successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  email:
+                    type: string
+                    example: user@example.com
+                  full_name:
+                    type: string
+                    example: John Doe
+                  username:
+                    type: string
+                    example: johndoec09
+                  role_name:
+                    type: string
+                    example: student
+                  profile_picture:
+                    type: string
+                    example: /images/profile1.png
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: 2024-12-21T10:20:30
+                  user_status:
+                    type: string
+                    example: active
+                  student_profile:
+                    type: object
+                    nullable: true
+                    example: { "class_id": 3, "subject_id": 2 }
+                  teacher_profile:
+                    type: object
+                    nullable: true
+                    example: null
+                  parent_profile:
+                    type: object
+                    nullable: true
+                    example: null
+                  notifications:
+                    type: array
+                    items:
+                      type: object
+                    example: []
+                  reports:
+                    type: array
+                    items:
+                      type: object
+                    example: []
+                  sent_messages:
+                    type: array
+                    items:
+                      type: object
+                    example: []
+                  received_messages:
+                    type: array
+                    items:
+                      type: object
+                    example: []
+        '400':
+          description: Missing query parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Provide either email or user_id
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: User not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/admin/announcement:
+    post:
+      tags:
+      - Admin
+      summary: Create Announcement
+      operationId: create_announcement_api_v1_admin_announcement_post
+      security:
+      - OAuth2PasswordBearer: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_create_announcement_api_v1_admin_announcement_post'
+        required: true
+      responses:
+        '200':
+          description: Announcement created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Announcement sent
+                  announcement:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      subject:
+                        type: string
+                        example: Urgent Notice
+                      body:
+                        type: string
+                        example: Classes are suspended due to weather conditions.
+                      recipient_role:
+                        type: string
+                        example: student
+                      specific_user_id:
+                        type: integer
+                        example: 42
+                      file_url:
+                        type: string
+                        example: /uploads/urgent_notice.pdf
+                      created_at:
+                        type: string
+                        format: date-time
+                        example: 2025-07-20T12:00:00Z
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal server error
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/admin/announcements:
+    get:
+      tags:
+      - Admin
+      summary: Get Announcements
+      operationId: get_announcements_api_v1_admin_announcements_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: recipient_role
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - nullable: true
+          title: Recipient Role
+      - name: specific_user_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - nullable: true
+          title: Specific User Id
+      responses:
+        '200':
+          description: A list of announcements
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  announcements:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        subject:
+                          type: string
+                          example: Urgent Notice
+                        body:
+                          type: string
+                          example: Please attend the meeting at 5 PM
+                        recipient_role:
+                          type: string
+                          example: teacher
+                        specific_user_id:
+                          type: integer
+                          example: 42
+                        file_url:
+                          type: string
+                          example: /uploads/notice.pdf
+                        created_at:
+                          type: string
+                          format: date-time
+                          example: 2025-07-20T12:00:00Z
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal server error
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/admin/user/{user_id}/block:
+    put:
+      tags:
+      - Admin
+      summary: Block User
+      operationId: block_user_api_v1_admin_user__user_id__block_put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      responses:
+        '200':
+          description: User blocked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User blocked successfully
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: User not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal server error
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/admin/user/{user_id}/unblock:
+    put:
+      tags:
+      - Admin
+      summary: Unblock User
+      operationId: unblock_user_api_v1_admin_user__user_id__unblock_put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      responses:
+        '200':
+          description: User unblocked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User unblocked successfully
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: User not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal server error
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+  /api/v1/admin/user/{user_id}:
+    delete:
+      tags:
+      - Admin
+      summary: Delete User
+      operationId: delete_user_api_v1_admin_user__user_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: User Id
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User deleted successfully
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: User not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: Internal server error
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+                
+components:
+  schemas:
+    AssignmentCreate:
+      properties:
+        title:
+          type: string
+          title: Title
+        description:
+          anyOf:
+          - type: string
+          - nullable: true
+          title: Description
+        assignment_deadline:
+          type: string
+          format: date-time
+          title: Assignment Deadline
+        score:
+          anyOf:
+          - type: integer
+          - nullable: true
+          title: Score
+          default: 0
+        question_type:
+          $ref: '#/components/schemas/QuestionType'
+      type: object
+      required:
+      - title
+      - assignment_deadline
+      - question_type
+      title: AssignmentCreate
+      
+    AssignmentSchemaOut:
+      properties:
+        id:
+          type: integer
+          title: Id
+        title:
+          type: string
+          title: Title
+        feedback:
+          anyOf:
+          - type: string
+          - nullable: true
+          title: Feedback
+        teacher_id:
+          type: integer
+          title: Teacher Id
+        student_id:
+          anyOf:
+          - type: integer
+          - nullable: true
+          title: Student Id
+        subject_id:
+          type: integer
+          title: Subject Id
+        assignment_created:
+          type: string
+          format: date-time
+          title: Assignment Created
+        assignment_deadline:
+          type: string
+          format: date-time
+          title: Assignment Deadline
+        score:
+          anyOf:
+          - type: integer
+          - nullable: true
+          title: Score
+          default: 0
+        question_type:
+          $ref: '#/components/schemas/QuestionType'
+        status:
+          $ref: '#/components/schemas/AssignmentStatus'
+      type: object
+      required:
+      - id
+      - title
+      - teacher_id
+      - subject_id
+      - assignment_created
+      - assignment_deadline
+      - question_type
+      - status
+      title: AssignmentSchemaOut
+      
+    AssignmentStatus:
+      type: string
+      enum:
+      - assigned
+      - pending
+      - submitted
+      - graded
+      title: AssignmentStatus
+      
+    BadgeTypeEnum:
+      type: string
+      enum:
+      - gold
+      - silver
+      - bronze
+      - participation
+      - achievement
+      - excellence
+      - creativity
+      title: BadgeTypeEnum
+      
+    Body_create_announcement_api_v1_admin_announcement_post:
+      properties:
+        subject:
+          type: string
+          title: Subject
+        body:
+          type: string
+          title: Body
+        recipient_role:
+          anyOf:
+          - type: string
+          - nullable: true
+          title: Recipient Role
+        specific_user_id:
+          anyOf:
+          - type: integer
+          - nullable: true
+          title: Specific User Id
+        file:
+          anyOf:
+          - type: string
+            format: binary
+          - nullable: true
+          title: File
+      type: object
+      required:
+      - subject
+      - body
+      title: Body_create_announcement_api_v1_admin_announcement_post
+      
+    Body_login_api_v1_user_login_post:
+      properties:
+        grant_type:
+          anyOf:
+          - type: string
+            pattern: ^password$
+          - nullable: true
+          title: Grant Type
+        username:
+          type: string
+          title: Username
+        password:
+          type: string
+          format: password
+          title: Password
+        scope:
+          type: string
+          title: Scope
+          default: ''
+        client_id:
+          anyOf:
+          - type: string
+          - nullable: true
+          title: Client Id
+        client_secret:
+          anyOf:
+          - type: string
+          - nullable: true
+          format: password
+          title: Client Secret
+      type: object
+      required:
+      - username
+      - password
+      title: Body_login_api_v1_user_login_post
+      
+    ChildStatsSchema:
+      properties:
+        upcoming_assignment_count:
+          type: integer
+          title: Upcoming Assignment Count
+        today_tasks_count:
+          type: integer
+          title: Today Tasks Count
+        completed_assignment_count:
+          type: integer
+          title: Completed Assignment Count
+      type: object
+      required:
+      - upcoming_assignment_count
+      - today_tasks_count
+      - completed_assignment_count
+      title: ChildStatsSchema
+      
+    ClassSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        standard:
+          type: integer
+          title: Standard
+        division:
+          type: string
+          title: Division
+      type: object
+      required:
+      - id
+      - standard
+      - division
+      title: ClassSchema
+      
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+      
+    NotificationSchema:
+      properties:
+        message:
+          type: string
+          title: Message
+        timestamp:
+          type: string
+          format: date-time
+          title: Timestamp
+      type: object
+      required:
+      - message
+      - timestamp
+      title: NotificationSchema
+      
+    ParentSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        user_id:
+          type: integer
+          title: User Id
+        student_id:
+          type: integer
+          title: Student Id
+        user:
+          $ref: '#/components/schemas/UserSchema'
+      type: object
+      required:
+      - id
+      - user_id
+      - student_id
+      - user
+      title: ParentSchema
+      
+    ProfileUpdateRequest:
+      properties:
+        full_name:
+          type: string
+          title: Full Name
+          example: john doe
+        email:
+          type: string
+          format: email
+          title: Email
+        profile_picture:
+          type: string
+          example: "avatar.png"
+      type: object
+      required:
+      - full_name
+      - email
+      title: ProfileUpdateRequest
+      
+    QuestionCreate:
+      properties:
+        question:
+          type: string
+          title: Question
+        option_1:
+          anyOf:
+          - type: string
+          - nullable: true
+          title: Option 1
+        option_2:
+          anyOf:
+          - type: string
+          - nullable: true
+          title: Option 2
+        option_3:
+          anyOf:
+          - type: string
+          - nullable: true
+          title: Option 3
+        option_4:
+          anyOf:
+          - type: string
+          - nullable: true
+          title: Option 4
+        correct_answer:
+          anyOf:
+          - type: string
+          - nullable: true
+          title: Correct Answer
+        descriptive_answer:
+          anyOf:
+          - type: string
+          - nullable: true
+          title: Descriptive Answer
+      type: object
+      required:
+      - question
+      title: QuestionCreate
+      
+    QuestionSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        question:
+          type: string
+          title: Question
+        option_1:
+          anyOf:
+          - type: string
+          - nullable: true
+          title: Option 1
+        option_2:
+          anyOf:
+          - type: string
+          - nullable: true
+          title: Option 2
+        option_3:
+          anyOf:
+          - type: string
+          - nullable: true
+          title: Option 3
+        option_4:
+          anyOf:
+          - type: string
+          - nullable: true
+          title: Option 4
+        correct_answer:
+          anyOf:
+          - type: string
+          - nullable: true
+          title: Correct Answer
+        descriptive_answer:
+          anyOf:
+          - type: string
+          - nullable: true
+          title: Descriptive Answer
+      type: object
+      required:
+      - id
+      - question
+      title: QuestionSchema
+      
+    QuestionType:
+      type: string
+      enum:
+      - multiple_choice
+      - text
+      title: QuestionType
+      
+    ResourceCreate:
+      properties:
+        title:
+          type: string
+          title: Title
+        description:
+          type: string
+          title: Description
+        url:
+          type: string
+          minLength: 1
+          format: uri
+          title: Url
+        category:
+          type: string
+          enum:
+          - student
+          - instructor
+          title: Category
+      type: object
+      required:
+      - title
+      - description
+      - url
+      - category
+      title: ResourceCreate
+      
+    ResourceOut:
+      properties:
+        id:
+          type: integer
+          title: Id
+        title:
+          type: string
+          title: Title
+        description:
+          type: string
+          title: Description
+        url:
+          type: string
+          minLength: 1
+          format: uri
+          title: Url
+        category:
+          type: string
+          title: Category
+        instructor_id:
+          type: integer
+          title: Instructor Id
+      type: object
+      required:
+      - id
+      - title
+      - description
+      - url
+      - category
+      - instructor_id
+      title: ResourceOut
+      
+    ResourceResponse:
+      properties:
+        message:
+          type: string
+          title: Message
+        resource:
+          $ref: '#/components/schemas/ResourceOut'
+      type: object
+      required:
+      - message
+      - resource
+      title: ResourceResponse
+      
+    RoleEnum:
+      type: string
+      enum:
+      - student
+      - teacher
+      - parent
+      - admin
+      title: RoleEnum
+      
+    StudentSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        user_id:
+          type: integer
+          title: User Id
+        class_id:
+          type: integer
+          title: Class Id
+        school_name:
+          type: string
+          title: School Name
+        user:
+          $ref: '#/components/schemas/UserSchema'
+        student_class:
+          $ref: '#/components/schemas/ClassSchema'
+      type: object
+      required:
+      - id
+      - user_id
+      - class_id
+      - school_name
+      - user
+      - student_class
+      title: StudentSchema
+      
+    StudentDashboardSchema:
+      properties:
+        full_name:
+          type: string
+          title: Full Name
+        assignments:
+          items:
+            type: string
+          type: array
+          title: Assignments
+        tasks:
+          items:
+            type: string
+          type: array
+          title: Tasks
+        badges:
+          items:
+            $ref: '#/components/schemas/BadgeTypeEnum'
+          type: array
+          title: Badges
+        subjects:
+          items:
+            type: string
+          type: array
+          title: Subjects
+      type: object
+      required:
+      - full_name
+      - assignments
+      - tasks
+      - badges
+      - subjects
+      title: StudentDashboardSchema
+      
+    TaskSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        title:
+          type: string
+          title: Title
+        description:
+          type: string
+          title: Description
+        student_id:
+          type: integer
+          title: Student Id
+        status:
+          $ref: '#/components/schemas/TaskStatusEnum'
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        due_date:
+          type: string
+          format: date-time
+          title: Due Date
+      type: object
+      required:
+      - id
+      - title
+      - description
+      - student_id
+      - status
+      - created_at
+      - due_date
+      title: TaskSchema
+      
+    TaskStatusEnum:
+      type: string
+      enum:
+      - pending
+      - complete
+      - overdue
+      title: TaskStatusEnum
+      
+    TeacherSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        user_id:
+          type: integer
+          title: User Id
+        class_id:
+          type: integer
+          title: Class Id
+        subject_id:
+          type: integer
+          title: Subject Id
+      type: object
+      required:
+      - id
+      - user_id
+      - class_id
+      - subject_id
+      title: TeacherSchema
+      
+    UserSchema:
+      properties:
+        id:
+          type: integer
+          title: Id
+        email:
+          type: string
+          title: Email
+        full_name:
+          type: string
+          title: Full Name
+        username:
+          type: string
+          title: Username
+        role_name:
+          $ref: '#/components/schemas/RoleEnum'
+        profile_picture:
+          anyOf:
+          - type: string
+          - nullable: true
+          title: Profile Picture
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        user_status:
+          $ref: '#/components/schemas/UserStatus'
+      type: object
+      required:
+      - id
+      - email
+      - full_name
+      - username
+      - role_name
+      - profile_picture
+      - created_at
+      - user_status
+      title: UserSchema
+      
+    UserStatus:
+      type: string
+      enum:
+      - active
+      - inactive
+      - suspended
+      title: UserStatus
+      
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+      
+    EditProfileRequest:
+      properties:
+        full_name:
+          type: string
+          title: Full Name
+        email:
+          type: string
+          format: email
+          title: Email
+        profile_picture:
+          type: string
+          title: Profile Picture
+          example: "avtar.jpg"
+      type: object
+      required:
+      - full_name
+      - email
+      - profile_picture
+      title: EditProfileRequest
+      
+  securitySchemes:
+    OAuth2PasswordBearer:
+      type: oauth2
+      flows:
+        password:
+          scopes: {}
+          tokenUrl: /api/v1/user/login
