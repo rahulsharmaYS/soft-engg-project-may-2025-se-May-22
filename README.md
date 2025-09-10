@@ -35,7 +35,7 @@ The application is built using latest **Vue.js 3** for the frontend and **FastAP
 ### Step 1: Clone the Project
 1. Clone the project repository and navigate to the project root directory (where Backend and frontend folders are present:
     ```bash
-    git clone <https://github.com/rahulsharmaYS/skillzy>                  # will update once grades are out
+    git clone <https://github.com/rahulsharmaYS/soft-engg-project-may-2025-se-May-22>
     ```
 2. Else, download the zip file and extract the app and start following from Step 2.
 
